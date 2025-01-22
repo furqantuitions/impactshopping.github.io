@@ -6,8 +6,8 @@
 using namespace std;
 using json = nlohmann::json;
 
-const string FIREBASE_API_KEY = "AIzaSyA67pl5x3lXSN1dpqg0qsa4VSzOXHgjqUU";
-const string FIREBASE_DB_URL = "https://skin-sugar-default-rtdb.firebaseio.com"; // Replace with your Firebase Realtime Database URL
+const string FIREBASE_API_KEY = "AIzaSyArP--v6nWJs3D_4zshWA-tIErCs_UVMdA";
+const string FIREBASE_DB_URL = "https://impactshopping-3f088-default-rtdb.firebaseio.com"; // Replace with your Firebase Realtime Database URL
 
 // Callback function for writing CURL response to a string
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, string* userp) {
