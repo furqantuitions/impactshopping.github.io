@@ -15,7 +15,9 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, string* userp) {
     return size * nmemb;
 }
 // Function to make a Firebase Authentication request
-void makeFirebaseRequest(const std::string& endpoint, const json& payload) {
+int makeFirebaseRequest(const std::string& endpoint, const json& payload) {
+    
+        int check=0;
     CURL* curl;
     CURLcode res;
     std::string response;
@@ -62,16 +64,18 @@ void makeFirebaseRequest(const std::string& endpoint, const json& payload) {
                 }
                 if (jsonResponse.contains("email")) {
                     std::cout << "Email: " << jsonResponse["email"] << "\n";
-                }
+                 check=1;}
                 if (jsonResponse.contains("localId")) {
                     std::cout << "User ID: " << jsonResponse["localId"] << "\n";
-                }
+              
+               check=1;  }
             } catch (const nlohmann::json::parse_error& e) {
                 std::cerr << "JSON Parsing Error: " << e.what() << "\n";
             }
+           
         } else {
             std::cerr << "CURL Error: " << curl_easy_strerror(res) << "\n";
-        }
+        } 
 
         // Cleanup
         curl_easy_cleanup(curl);
@@ -79,6 +83,7 @@ void makeFirebaseRequest(const std::string& endpoint, const json& payload) {
     }
 
     curl_global_cleanup();
+    return check;
 }
 
 // Function to handle user sign-up
@@ -89,6 +94,7 @@ void signUp() {
     std::cout << "Enter password: ";
     std::cin >> password;
 
+
     // JSON payload for sign-up
     json payload = {
         {"email", email},
@@ -96,7 +102,8 @@ void signUp() {
         {"returnSecureToken", true}
     };
 
-    makeFirebaseRequest("signUp", payload);
+  imakeFirebaseRequest("signUp", payload);
+    
 }
 
 // Function to handle user login
@@ -114,7 +121,7 @@ void signIn() {
         {"returnSecureToken", true}
     };
 
-    makeFirebaseRequest("signInWithPassword", payload);
+    cout << makeFirebaseRequest("signInWithPassword", payload);
 }
 // Function to write data to Firebase Realtime Database
 void writeToDatabase() {
