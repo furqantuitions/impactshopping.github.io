@@ -15,8 +15,8 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, string* userp) {
     return size * nmemb;
 }
 // Function to make a Firebase Authentication request
-int makeFirebaseRequest(const std::string& endpoint, const json& payload) {
-    
+string makeFirebaseRequest(const std::string& endpoint, const json& payload) {
+     string userId = "null";
         int check=0;
     CURL* curl;
     CURLcode res;
@@ -26,6 +26,7 @@ int makeFirebaseRequest(const std::string& endpoint, const json& payload) {
     curl = curl_easy_init();
 
     if (curl) {
+       
         // Construct the full URL
         std::string url = "https://identitytoolkit.googleapis.com/v1/accounts:" + endpoint + "?key=" + FIREBASE_API_KEY;
 
@@ -67,7 +68,7 @@ int makeFirebaseRequest(const std::string& endpoint, const json& payload) {
                  check=1;}
                 if (jsonResponse.contains("localId")) {
                     std::cout << "User ID: " << jsonResponse["localId"] << "\n";
-              
+                      userId = jsonResponse["localId"];
                check=1;  }
             } catch (const nlohmann::json::parse_error& e) {
                 std::cerr << "JSON Parsing Error: " << e.what() << "\n";
@@ -83,55 +84,18 @@ int makeFirebaseRequest(const std::string& endpoint, const json& payload) {
     }
 
     curl_global_cleanup();
-    return check;
-}
-
-// Function to handle user sign-up
-void signUp() {
-    std::string email, password;
-    std::cout << "Enter email for sign-up: ";
-    std::cin >> email;
-    std::cout << "Enter password: ";
-    std::cin >> password;
-
-
-    // JSON payload for sign-up
-    json payload = {
-        {"email", email},
-        {"password", password},
-        {"returnSecureToken", true}
-    };
-
-  imakeFirebaseRequest("signUp", payload);
-    
-}
-
-// Function to handle user login
-void signIn() {
-    std::string email, password;
-    std::cout << "Enter email for sign-in: ";
-    std::cin >> email;
-    std::cout << "Enter password: ";
-    std::cin >> password;
-
-    // JSON payload for sign-in
-    json payload = {
-        {"email", email},
-        {"password", password},
-        {"returnSecureToken", true}
-    };
-
-    cout << makeFirebaseRequest("signInWithPassword", payload);
+    return userId;
 }
 // Function to write data to Firebase Realtime Database
-void writeToDatabase() {
-    string nodeName, jsonData;
-    cout << "Enter the node name to write data to: ";
-    cin >> nodeName;
-    cin.ignore(); // Clear input buffer
-    cout << "Enter JSON data to save: ";
-    getline(cin, jsonData);
+void writeToDatabase(string userId,string name,string email) {
+    string nodeName = "users", jsonData ="{ \"" + userId + "\": {"
+                       "\"userId\": \"" + userId + "\", "
+                       "\"name\": \"" + name + "\", "
+                       "\"email\": \"" + email + "\""
+                       "} }";
 
+
+  
     CURL* curl;
     CURLcode res;
     string response;
@@ -144,7 +108,7 @@ void writeToDatabase() {
 
         // Set CURL options
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
@@ -174,10 +138,8 @@ void writeToDatabase() {
 }
 
 // Function to read data from Firebase Realtime Database
-void readFromDatabase() {
-    string nodeName;
-    cout << "Enter the node name to read data from: ";
-    cin >> nodeName;
+void readFromDatabase(string userId) {
+    string nodeName = "users";
 
     CURL* curl;
     CURLcode res;
@@ -187,8 +149,7 @@ void readFromDatabase() {
     curl = curl_easy_init();
 
     if (curl) {
-        string url = FIREBASE_DB_URL + "/" + nodeName + ".json?auth=" + FIREBASE_API_KEY;
-
+        string url = FIREBASE_DB_URL + "/" + nodeName + "/" + userId + ".json?auth=" + FIREBASE_API_KEY;
         // Set CURL options
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -211,6 +172,48 @@ void readFromDatabase() {
 
     curl_global_cleanup();
 }
+// Function to handle user sign-up
+void signUp() {
+    std::string email, password,name;
+    std::cout << "Enter email for sign-up: ";
+    std::cin >> email;
+    std::cout << "Enter password: ";
+    std::cin >> password;
+    cout <<"Enter name:";
+   cin >> name;
+
+    // JSON payload for sign-up
+    json payload = {
+        {"email", email},
+        {"password", password},
+        {"returnSecureToken", true}
+    };
+string userId = makeFirebaseRequest("signUp", payload);
+  if( userId != "null"){
+   writeToDatabase(userId,name,email);
+  }
+    
+}
+
+// Function to handle user login
+void signIn() {
+    std::string email, password;
+    std::cout << "Enter email for sign-in: ";
+    std::cin >> email;
+    std::cout << "Enter password: ";
+    std::cin >> password;
+
+    // JSON payload for sign-in
+    json payload = {
+        {"email", email},
+        {"password", password},
+        {"returnSecureToken", true}
+    };
+
+    string userId =  makeFirebaseRequest("signInWithPassword", payload);
+    readFromDatabase(userId);
+}
+
 void callOpenAIAPI() {
     string apiKey = "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";
     string prompt;
@@ -286,10 +289,10 @@ int main() {
             signIn();
             break;
             case 3:
-            writeToDatabase();
+            //writeToDatabase();
             break;
             case 4:
-            readFromDatabase();
+           // readFromDatabase();
             break;
             case 5:
             callOpenAIAPI();
