@@ -143,7 +143,7 @@ void readFromDatabase(string userId) {
 
     CURL* curl;
     CURLcode res;
-    string response;
+    string response,email,name;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
@@ -162,6 +162,14 @@ void readFromDatabase(string userId) {
 
         if (res == CURLE_OK) {
             cout << "Data successfully read from Firebase:\n" << response << "\n";
+       json jsonResponse = json::parse(response);
+       if(jsonResponse.contains("email")){
+        email = jsonResponse["email"];
+       }
+       if(jsonResponse.contains("name")){
+        name = jsonResponse["name"];
+        cout << "Hello " <<name;
+       }
         } else {
             cerr << "CURL Error: " << curl_easy_strerror(res) << "\n";
         }
@@ -212,6 +220,54 @@ void signIn() {
 
     string userId =  makeFirebaseRequest("signInWithPassword", payload);
     readFromDatabase(userId);
+}
+// Function to call the local API (botpress integration)
+void callLocalAPI(const std::string& userMessage) {
+    CURL* curl;
+    CURLcode res;
+    string response;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+
+    if (curl) {
+        // Construct the URL for the local API
+        string url = "http://localhost:3000/api/botpress";  // Your local API URL
+        
+        // Prepare the payload to send to the local API
+        json payload = {{"userMessage", userMessage}};
+        string postData = payload.dump();
+
+        // Set cURL options
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postData.size());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        // Set HTTP headers
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+        // Perform the request
+        res = curl_easy_perform(curl);
+
+        if (res == CURLE_OK) {
+            std::cout << "Response from Local API:\n" << response << "\n";
+        } else {
+            std::cerr << "CURL Error: " << curl_easy_strerror(res) << "\n";
+        }
+
+        // Cleanup
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
+    }
+
+    curl_global_cleanup();
 }
 
 void callOpenAIAPI() {
@@ -274,7 +330,8 @@ void callOpenAIAPI() {
 
 int main() {
     int choice;
-
+  callLocalAPI("hello");
+  /*
     std::cout << "Firebase Authentication Menu:\n";
     std::cout << "1. Sign Up\n";
     std::cout << "2. Sign In\n3. Write\n4. Read";
@@ -299,7 +356,7 @@ int main() {
         default:
             std::cout << "Invalid choice. Exiting.\n";
             break;
-    }
+    }*/
 
     return 0;
 }
